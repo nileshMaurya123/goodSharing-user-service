@@ -7,7 +7,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 export const resolvers = {
   Query: {
     async getUserDetails(parent, args, context) {
+      console.log(" Context object:", context);
+      console.log(" Context user:", context.user);
       if (!context.user) {
+        console.log(" Unauthorized: No user in context");
         return {
           status: 401,
           statusMessage: "Unauthorized",
@@ -17,7 +20,7 @@ export const resolvers = {
 
       const { rows } = await pool.query(
         "SELECT id, email, name FROM users WHERE id = $1",
-        [context.user.id]
+        [context.user.id],
       );
 
       return {
@@ -25,6 +28,32 @@ export const resolvers = {
         statusMessage: "User details fetched successfully",
         data: rows[0],
       };
+    },
+
+    async getAllUserDetails(parent, args, context) {
+      console.log(context.user);
+      if (!context.user) {
+        return {
+          status: 401,
+          statusMessage: "Unauthorized",
+          data: null,
+        };
+      }
+      try {
+        const { rows } = await pool.query("SELECT id,email,name FROM users");
+        return {
+          status: 200,
+          statusMessage: "All users detailed fetched successfully",
+          data: rows,
+        };
+      } catch (error) {
+        console.error(error);
+        return {
+          status: 500,
+          statusMessage: "Internal server error",
+          data: null,
+        };
+      }
     },
   },
 
@@ -37,7 +66,7 @@ export const resolvers = {
           `INSERT INTO users (email, password, name)
          VALUES ($1, $2, $3)
          RETURNING id, email, name`,
-          [email, hashedPassword, name]
+          [email, hashedPassword, name],
         );
 
         const user = rows[0];
@@ -76,7 +105,7 @@ export const resolvers = {
     async signin(_, { email, password }) {
       const { rows } = await pool.query(
         "SELECT * FROM users WHERE email = $1",
-        [email]
+        [email],
       );
 
       const user = rows[0];
@@ -121,7 +150,7 @@ export const resolvers = {
     async __resolveReference(ref) {
       const { rows } = await pool.query(
         "SELECT id, email, name FROM users WHERE id = $1",
-        [ref.id]
+        [ref.id],
       );
       return rows[0];
     },

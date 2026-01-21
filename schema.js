@@ -2,8 +2,8 @@ import gql from "graphql-tag";
 
 export const typeDefs = gql`
   type Query {
-    # Query API 1
     getUserDetails: UserResponse
+    getAllUserDetails: UsersResponse
   }
 
   type Mutation {
@@ -18,6 +18,12 @@ export const typeDefs = gql`
     status: Int!
     statusMessage: String!
     data: User
+  }
+
+  type UsersResponse {
+    status: Int!
+    statusMessage: String!
+    data: [User!]
   }
 
   type User @key(fields: "id") {
