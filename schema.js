@@ -8,7 +8,12 @@ export const typeDefs = gql`
 
   type Mutation {
     # Mutation API 1
-    signup(email: String!, password: String!, name: String!): ApiResponse
+    signup(
+      email: String!
+      password: String!
+      first_name: String!
+      last_name: String!
+    ): ApiResponse
 
     # Mutation API 2
     signin(email: String!, password: String!): ApiResponse
@@ -29,7 +34,8 @@ export const typeDefs = gql`
   type User @key(fields: "id") {
     id: ID!
     email: String!
-    name: String!
+    first_name: String!
+    last_name: String!
   }
 
   type ApiResponse {

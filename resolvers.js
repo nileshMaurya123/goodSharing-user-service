@@ -3,12 +3,16 @@ import bcrypt from "bcryptjs";
 import { pool } from "./db.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined");
+}
 
 export const resolvers = {
   Query: {
     async getUserDetails(parent, args, context) {
       console.log(" Context object:", context);
       console.log(" Context user:", context.user);
+
       if (!context.user) {
         console.log(" Unauthorized: No user in context");
         return {
@@ -18,20 +22,30 @@ export const resolvers = {
         };
       }
 
+      const userId = Number(context.user.id);
+
       const { rows } = await pool.query(
-        "SELECT id, email, name FROM users WHERE id = $1",
-        [context.user.id],
+        "SELECT id, email, first_name,last_name FROM users WHERE id = $1",
+        [userId],
       );
+
+      if (!rows.length) {
+        return {
+          status: 404,
+          statusMessage: "User not found",
+          data: null,
+        };
+      }
 
       return {
         status: 200,
         statusMessage: "User details fetched successfully",
-        data: rows[0],
+        data: rows[0] || null,
       };
     },
 
     async getAllUserDetails(parent, args, context) {
-      console.log(context.user);
+      console.log("context.user", context.user);
       if (!context.user) {
         return {
           status: 401,
@@ -40,7 +54,9 @@ export const resolvers = {
         };
       }
       try {
-        const { rows } = await pool.query("SELECT id,email,name FROM users");
+        const { rows } = await pool.query(
+          "SELECT id,email,first_name,last_name FROM users",
+        );
         return {
           status: 200,
           statusMessage: "All users detailed fetched successfully",
@@ -58,15 +74,15 @@ export const resolvers = {
   },
 
   Mutation: {
-    async signup(_, { email, password, name }) {
+    async signup(_, { email, password, first_name, last_name }) {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       try {
         const { rows } = await pool.query(
-          `INSERT INTO users (email, password, name)
-         VALUES ($1, $2, $3)
-         RETURNING id, email, name`,
-          [email, hashedPassword, name],
+          `INSERT INTO users (email, password, first_name,last_name)
+         VALUES ($1, $2, $3,$4)
+         RETURNING id, email, first_name,last_name`,
+          [email, hashedPassword, first_name, last_name],
         );
 
         const user = rows[0];
@@ -137,9 +153,10 @@ export const resolvers = {
         data: {
           token,
           user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
+            id: rows[0].id,
+            email: rows[0].email,
+            first_name: rows[0].first_name,
+            last_name: rows[0].last_name,
           },
         },
       };
@@ -149,7 +166,7 @@ export const resolvers = {
   User: {
     async __resolveReference(ref) {
       const { rows } = await pool.query(
-        "SELECT id, email, name FROM users WHERE id = $1",
+        "SELECT id, email, first_name,last_name FROM users WHERE id = $1",
         [ref.id],
       );
       return rows[0];

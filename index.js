@@ -12,8 +12,10 @@ startStandaloneServer(server, {
   listen: { port: 4001, host: "0.0.0.0" },
   context: async ({ req }) => {
     const xUser = req.headers["x-user"];
+    const authHeader = req.headers.authorization;
 
     console.log("📩 x-user header received:", xUser);
+    console.log("req.headers.authorization", authHeader);
 
     return {
       user: xUser ? JSON.parse(xUser) : null,
